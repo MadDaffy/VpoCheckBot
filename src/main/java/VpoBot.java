@@ -2,6 +2,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.telegram.telegrambots.TelegramBotsApi;
 import org.telegram.telegrambots.api.methods.send.SendMessage;
 import org.telegram.telegrambots.api.objects.Update;
@@ -9,80 +10,78 @@ import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.exceptions.TelegramApiException;
 import org.telegram.telegrambots.exceptions.TelegramApiRequestException;
 
-import java.util.logging.Logger;
-
+@Slf4j
+@Getter
+@Setter
 @AllArgsConstructor
 @NoArgsConstructor
 public class VpoBot extends TelegramLongPollingBot {
 
-//   private final static Logger logger = Logger.getLogger(VpoBot.class);
+    /**
+     * Тег для логирования.
+     */
+    private static final String LOG_TAG = "[VpoBot] ::";
 
-   final int RECONNECT_PAUSE = 10000;
+    public static final String TEXT = "Агентство \"Анадолу\" — крупнейшее турецкое информационное агентство, старейшее в Турции."
+            + "\n" + "https://www.aa.com.tr/ru";
+    public static final String START_ACTION = "Кликни" + "\n" + "/start";
 
-   @Getter
-   @Setter
-   String userName;
-   @Getter
-   @Setter
-   String token;
+    final int RECONNECT_PAUSE = 10000;
+
+    private String botUsername;
+
+    private String botToken;
 
     @Override
     public void onUpdateReceived(Update update) {
 
-//         log.debug("Receive new Update. updateID: " + update.getUpdateId());
         Long chatId = update.getMessage().getChatId();
         String inputText = update.getMessage().getText();
-        System.out.println(inputText);
+        log.info("{} input text is = {}", LOG_TAG, inputText);
 
-        if(inputText.startsWith("/start")){
-            SendMessage message = new SendMessage();
-            message.setChatId(chatId);
-            message.setText("Агентство \"Анадолу\" — крупнейшее турецкое информационное агентство, старейшее в Турции."+"\n"+"https://www.aa.com.tr/ru");
-            try {
-                execute(message);
-            } catch (TelegramApiException e) {
-                e.printStackTrace();
-            }
-        } else {
-            SendMessage message = new SendMessage();
-            message.setChatId(chatId);
-            message.setText("Кликни"+"\n"+"/start");
-            try {
-                execute(message);
-            } catch (TelegramApiException e) {
-                e.printStackTrace();
-            }
-        }
+        SendMessage message = getSendMessage(chatId, inputText);
 
+        executeMessage(message);
     }
 
-    public String getBotUsername() {
-        return userName;
-    }
-
-    public String getBotToken() {
-        return token;
-    }
-
-    public void botConnect(){
+    public void botConnect() {
         TelegramBotsApi telegramBotsApi = new TelegramBotsApi();
 
         try {
             telegramBotsApi.registerBot(this);
-            System.out.println("Telegram Bot started");
-//            logger.info("Telegram Bot started");
+            log.info("{} bot has been started", LOG_TAG);
         } catch (TelegramApiRequestException e) {
-            System.out.println("Cant Connect. Pause " + RECONNECT_PAUSE / 1000 + "sec and try again. Error: " + e.getMessage());
-//            logger.error("Cant Connect. Pause " + RECONNECT_PAUSE / 1000 + "sec and try again. Error: " + e.getMessage());
+            log.error("Cant Connect. Pause " + RECONNECT_PAUSE / 1000 + "sec and try again. Error: " + e.getMessage());
         }
 
+        reconnect();
+    }
 
+    private void reconnect() {
         try {
             Thread.sleep(RECONNECT_PAUSE);
         } catch (InterruptedException e) {
             botConnect();
         }
+    }
 
+    private void executeMessage(SendMessage message) {
+        try {
+            execute(message);
+        } catch (TelegramApiException e) {
+            e.printStackTrace();
+        }
+    }
 
+    private SendMessage getSendMessage(Long chatId, String inputText) {
+        SendMessage message;
+
+        if (inputText.startsWith("/start")) {
+            message = new SendMessage(chatId, TEXT);
+        } else {
+            message = new SendMessage(chatId, START_ACTION);
+        }
+
+        return message;
     }
 }

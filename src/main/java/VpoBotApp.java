@@ -1,18 +1,22 @@
+import lombok.extern.slf4j.Slf4j;
 import org.telegram.telegrambots.ApiContextInitializer;
 
-import java.util.logging.Logger;
-
+@Slf4j
 public class VpoBotApp {
 
-    // Error "VpoBotApp.class"
-    private static Logger logger = Logger.getLogger(VpoBotApp.class);
+    /**
+     * Тег для логирования.
+     */
+    private static final String LOG_TAG = "[VpoBotApp ] ::";
 
     public static void main(String[] args) {
+        log.info("{} trying to init api context", LOG_TAG);
+
         ApiContextInitializer.init();
+        log.info("{} api context has been initialized", LOG_TAG);
 
-        VpoBot VPO_check_bot = new VpoBot ("VPO_check_bot", "1628820312:AAHq7FfWeoxp2hw8KUegsXziXg5B7YOG6gc");
+        VpoBot VPO_check_bot = new VpoBot("VPO_check_bot", "1628820312:AAHq7FfWeoxp2hw8KUegsXziXg5B7YOG6gc");
         VPO_check_bot.botConnect();
-
     }
 
 }
