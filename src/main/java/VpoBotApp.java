@@ -4,7 +4,8 @@ import java.util.logging.Logger;
 
 public class VpoBotApp {
 
-//    private static Logger logger = Logger.getLogger(VpoBotApp.class);
+    // Error "VpoBotApp.class"
+    private static Logger logger = Logger.getLogger(VpoBotApp.class);
 
     public static void main(String[] args) {
         ApiContextInitializer.init();
