@@ -1,7 +1,5 @@
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import Service.Parser;
+import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.telegram.telegrambots.TelegramBotsApi;
 import org.telegram.telegrambots.api.methods.send.SendMessage;
@@ -9,6 +7,8 @@ import org.telegram.telegrambots.api.objects.Update;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.exceptions.TelegramApiException;
 import org.telegram.telegrambots.exceptions.TelegramApiRequestException;
+
+import java.io.IOException;
 
 @Slf4j
 @Getter
@@ -22,16 +22,17 @@ public class VpoBot extends TelegramLongPollingBot {
      */
     private static final String LOG_TAG = "[VpoBot] ::";
 
-    public static final String TEXT = "Агентство \"Анадолу\" — крупнейшее турецкое информационное агентство, старейшее в Турции."
-            + "\n" + "https://www.aa.com.tr/ru";
+    public static final String TEXT = "Федеральное агентство новостей (Riafan.ru) – современный интернет-ресурс, посвященный общественно-политической жизни в России и в мире. Оперативное и разностороннее освещение актуальных событий, интервью с политиками, эксклюзивные материалы из горячих точек: Riafan.ru предлагает своим читателям полноценную информационную картину дня."
+            + "\n" + "https://riafan.ru/";
     public static final String START_ACTION = "Кликни" + "\n" + "/start";
 
-    final int RECONNECT_PAUSE = 10000;
+    final int RECONNECT_PAUSE = 1000;
 
     private String botUsername;
 
     private String botToken;
 
+    @SneakyThrows
     @Override
     public void onUpdateReceived(Update update) {
 
@@ -42,6 +43,7 @@ public class VpoBot extends TelegramLongPollingBot {
         SendMessage message = getSendMessage(chatId, inputText);
 
         executeMessage(message);
+
     }
 
     public void botConnect() {
@@ -73,11 +75,11 @@ public class VpoBot extends TelegramLongPollingBot {
         }
     }
 
-    private SendMessage getSendMessage(Long chatId, String inputText) {
+    private SendMessage getSendMessage(Long chatId, String inputText) throws IOException {
         SendMessage message;
-
+        Parser parser = new Parser();
         if (inputText.startsWith("/start")) {
-            message = new SendMessage(chatId, TEXT);
+            message = new SendMessage(chatId, parser.getPage());
         } else {
             message = new SendMessage(chatId, START_ACTION);
         }
