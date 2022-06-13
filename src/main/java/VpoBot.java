@@ -1,11 +1,11 @@
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
-import org.telegram.telegrambots.TelegramBotsApi;
-import org.telegram.telegrambots.api.methods.send.SendMessage;
-import org.telegram.telegrambots.api.objects.Update;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
-import org.telegram.telegrambots.exceptions.TelegramApiException;
-import org.telegram.telegrambots.exceptions.TelegramApiRequestException;
+import org.telegram.telegrambots.meta.TelegramBotsApi;
+import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.objects.Update;
+import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
+import org.telegram.telegrambots.updatesreceivers.DefaultBotSession;
 
 import java.io.IOException;
 
@@ -35,7 +35,8 @@ public class VpoBot extends TelegramLongPollingBot {
     @Override
     public void onUpdateReceived(Update update) {
 
-        Long chatId = update.getMessage().getChatId();
+        String chatId = update.getMessage().getChatId().toString();
+
         String inputText = update.getMessage().getText();
         log.info("{} input text is = {}", LOG_TAG, inputText);
 
@@ -46,12 +47,17 @@ public class VpoBot extends TelegramLongPollingBot {
     }
 
     public void botConnect() {
-        TelegramBotsApi telegramBotsApi = new TelegramBotsApi();
+        TelegramBotsApi telegramBotsApi = null;
+        try {
+            telegramBotsApi = new TelegramBotsApi(DefaultBotSession.class );
+        } catch (TelegramApiException e) {
+            e.printStackTrace();
+        }
 
         try {
             telegramBotsApi.registerBot(this);
             log.info("{} bot has been started", LOG_TAG);
-        } catch (TelegramApiRequestException e) {
+        } catch (TelegramApiException e) {
             log.error("Cant Connect. Pause " + RECONNECT_PAUSE / 1000 + "sec and try again. Error: " + e.getMessage());
         }
 
@@ -74,7 +80,7 @@ public class VpoBot extends TelegramLongPollingBot {
         }
     }
 
-    private SendMessage getSendMessage(Long chatId, String inputText) throws IOException {
+    private SendMessage getSendMessage(String chatId, String inputText) throws IOException {
         SendMessage message;
         Parser parser = new Parser();
         if (inputText.startsWith("/start")) {

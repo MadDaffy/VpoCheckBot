@@ -1,41 +1,73 @@
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
+import org.json.XML;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
-import java.io.IOException;
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBException;
+import javax.xml.bind.Unmarshaller;
+import java.io.*;
 import java.net.URL;
+import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.List;
 
 public class Parser {
 
-      public String getPage() throws IOException {
+    private File file = new File("D:/JavaDev/VpoCheckBot/test.xml");
+    private URL url;
 
-        StringBuffer stringBuffer = new StringBuffer();
-        String url = "https://riafan.ru/category/tape_news";
-        ArrayList<Article> articleList = new ArrayList<>();
-        Document page = Jsoup.parse(new URL(url),10000);
-        Element news = page.getElementsByAttributeValue("class", "container-fluid").first();
-        Elements article = news.getElementsByTag("a");
+    public String getPage() throws IOException {
 
-          for (Element element : article) {
-              String urlArticle = "https://riafan.ru"+element.attr("href");
-              String text = element.text();
-              stringBuffer.append(text)
-                      .append("\n")
-                      .append(urlArticle)
-                      .append("\n")
-                      .append("---------------------")
-                      .append("\n");
-              articleList.add(new Article(urlArticle,text));
+        url =  new URL("https://sana.sy/ru/?feed=rss2");
+        String context = Parser.ReadContext(url);
+        Parser.writeContext(file, context);
+
+          try {
+              JAXBContext jaxbContext = JAXBContext.newInstance(NewsPost.class);
+              Unmarshaller jaxbUnmarshaller = jaxbContext.createUnmarshaller();
+              NewsPost que= (NewsPost) jaxbUnmarshaller.unmarshal(file);
+          } catch (JAXBException e) {
+              e.printStackTrace();
           }
-        String result = stringBuffer.toString();
-        return result;
+
+          return file.toString();
     }
+
+    public static void writeContext(File file, String context) {
+        try (BufferedWriter bufferedWriter = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file)))){
+            bufferedWriter.write(context);
+            bufferedWriter.flush();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static String ReadContext(URL url) {
+        URLConnection urlConnection = null;
+        try {
+            urlConnection = url.openConnection();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        try (BufferedReader in = new BufferedReader(new InputStreamReader(urlConnection.getInputStream()))) {
+            StringBuffer stringBuffer = new StringBuffer();
+            do {
+                stringBuffer.append(in.readLine() + "\n");
+            } while (in.readLine() != null);
+            return stringBuffer.toString();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return "FAIL";
+    }
+
     @Getter
     @Setter
     @AllArgsConstructor
