@@ -3,16 +3,19 @@ import lombok.extern.slf4j.Slf4j;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.TelegramBotsApi;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.updatesreceivers.DefaultBotSession;
 
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.ArrayList;
 
 @Slf4j
 @Getter
 @Setter
-@AllArgsConstructor
 @NoArgsConstructor
 public class VpoBot extends TelegramLongPollingBot {
 
@@ -27,9 +30,24 @@ public class VpoBot extends TelegramLongPollingBot {
 
     final int RECONNECT_PAUSE = 1000;
 
+    private ArrayList<URL> urlNewsList = getAllUrlList();
+    private URL url;
+    {
+        try {
+            url = new URL("https://www.aa.com.tr/ru/rss/default?cat=live");
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+        }
+    }
+
     private String botUsername;
 
     private String botToken;
+
+    public VpoBot(String botUsername, String botToken) {
+        this.botUsername = botUsername;
+        this.botToken = botToken;
+    }
 
     @SneakyThrows
     @Override
@@ -39,11 +57,11 @@ public class VpoBot extends TelegramLongPollingBot {
 
         String inputText = update.getMessage().getText();
         log.info("{} input text is = {}", LOG_TAG, inputText);
-
-        SendMessage message = getSendMessage(chatId, inputText);
-
-        executeMessage(message);
-
+        ArrayList<SendMessage> listNews = getSendMessage(chatId, inputText);
+        for (SendMessage sendMessage : listNews) {
+            sendMessage.disableWebPagePreview();
+            executeMessage(sendMessage);
+        }
     }
 
     public void botConnect() {
@@ -80,15 +98,36 @@ public class VpoBot extends TelegramLongPollingBot {
         }
     }
 
-    private SendMessage getSendMessage(String chatId, String inputText) throws IOException {
-        SendMessage message;
-        Parser parser = new Parser();
-        if (inputText.startsWith("/start")) {
-            message = new SendMessage(chatId, parser.getPage());
-        } else {
-            message = new SendMessage(chatId, START_ACTION);
-        }
+    private ArrayList<SendMessage> getSendMessage(String chatId, String inputText) throws IOException {
 
-        return message;
+        Parser parser = new Parser();
+        String stringNews = parser.getPage(url);
+        ArrayList<SendMessage> listMessage = new ArrayList<>();
+        if (inputText.startsWith("/start")) {
+            int stepMaxChars = 4000;
+            int startIndex = 0;
+            while (startIndex + stepMaxChars < stringNews.length()) {
+                String partOfNews = stringNews.substring(startIndex, startIndex+stepMaxChars);
+                listMessage.add(new SendMessage(chatId, partOfNews));
+                startIndex += stepMaxChars;
+            }
+            //The last part of News
+            listMessage.add(new SendMessage(chatId, stringNews.substring(startIndex)));
+
+        } else {
+            listMessage.add(new SendMessage(chatId, START_ACTION));
+        }
+        return listMessage;
+    }
+
+    private ArrayList<URL> getAllUrlList() {
+        ArrayList<URL> listNewsUrl = new ArrayList<>();
+        try {
+            listNewsUrl.add(new URL("https://www.aa.com.tr/ru/rss/default?cat=live"));
+            listNewsUrl.add(new URL("https://sana.sy/ru/?feed=rss2"));
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+        }
+        return listNewsUrl;
     }
 }

@@ -1,86 +1,64 @@
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.Setter;
-import org.json.XML;
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.InputSource;
 
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.JAXBException;
-import javax.xml.bind.Unmarshaller;
-import java.io.*;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import java.io.File;
+import java.io.IOException;
 import java.net.URL;
-import java.net.URLConnection;
-import java.util.ArrayList;
-import java.util.List;
 
 public class Parser {
 
-    private File file = new File("D:/JavaDev/VpoCheckBot/test.xml");
-    private URL url;
+    public String getPage(URL url) throws IOException {
 
-    public String getPage() throws IOException {
-
-        url =  new URL("https://sana.sy/ru/?feed=rss2");
-        String context = Parser.ReadContext(url);
-        Parser.writeContext(file, context);
-
-          try {
-              JAXBContext jaxbContext = JAXBContext.newInstance(NewsPost.class);
-              Unmarshaller jaxbUnmarshaller = jaxbContext.createUnmarshaller();
-              NewsPost que= (NewsPost) jaxbUnmarshaller.unmarshal(file);
-          } catch (JAXBException e) {
-              e.printStackTrace();
-          }
-
-          return file.toString();
-    }
-
-    public static void writeContext(File file, String context) {
-        try (BufferedWriter bufferedWriter = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file)))){
-            bufferedWriter.write(context);
-            bufferedWriter.flush();
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public static String ReadContext(URL url) {
-        URLConnection urlConnection = null;
         try {
-            urlConnection = url.openConnection();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        try (BufferedReader in = new BufferedReader(new InputStreamReader(urlConnection.getInputStream()))) {
+            DocumentBuilderFactory f =
+                    DocumentBuilderFactory.newInstance();
+            DocumentBuilder b = f.newDocumentBuilder();
+            Document doc = b.parse(new InputSource(url.openStream()));
+
+            doc.getDocumentElement().normalize();
+            System.out.println("Root element: " +
+                    doc.getDocumentElement().getNodeName());
+
+            // loop through each item
+            NodeList items = doc.getElementsByTagName("item");
             StringBuffer stringBuffer = new StringBuffer();
-            do {
-                stringBuffer.append(in.readLine() + "\n");
-            } while (in.readLine() != null);
+            for (int i = 0; i < items.getLength(); i++) {
+
+                    Node n = items.item(i);
+                    if (n.getNodeType() != Node.ELEMENT_NODE)
+                        continue;
+                    Element e = (Element) n;
+                    NodeList titleList =
+                            e.getElementsByTagName("title");
+                    NodeList linkList =
+                            e.getElementsByTagName("link");
+                    NodeList descriptionList =
+                            e.getElementsByTagName("description");
+                    Element titleElem = (Element) titleList.item(0);
+                    Element linkElem = (Element) linkList.item(0);
+                    Element descriptionElem = (Element) descriptionList.item(0);
+                    Node titleNode = titleElem.getChildNodes().item(0);
+                    Node linkNode = linkElem.getChildNodes().item(0);
+                    Node descriptionNode = descriptionElem.getChildNodes().item(0);
+                    stringBuffer.append("Тема:").append("\n")
+                            .append(titleNode.getNodeValue()).append("\n")
+                            .append("Содержание:").append("\n")
+                            .append(descriptionNode.getNodeValue()).append("\n")
+                            .append("Ссылка на статью").append("\n")
+                            .append(linkNode.getNodeValue()).append("\n")
+                            .append("----------------------").append("\n");
+            }
+
             return stringBuffer.toString();
-        } catch (IOException e) {
+
+        } catch (Exception e) {
             e.printStackTrace();
         }
-        return "FAIL";
-    }
-
-    @Getter
-    @Setter
-    @AllArgsConstructor
-    class Article {
-          private String url;
-          private String text;
-
-        @Override
-        public String toString() {
-            return "Статья " + text + "\n"
-                    + " Ссылка " + url+ "\n"
-                    +"------------------"+"\n";
-
-        }
+        return "someShit";
     }
 }
