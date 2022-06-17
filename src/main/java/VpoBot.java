@@ -30,7 +30,6 @@ public class VpoBot extends TelegramLongPollingBot {
 
     final int RECONNECT_PAUSE = 1000;
 
-    private ArrayList<URL> urlNewsList = getAllUrlList();
     private URL url;
     {
         try {
@@ -100,10 +99,16 @@ public class VpoBot extends TelegramLongPollingBot {
 
     private ArrayList<SendMessage> getSendMessage(String chatId, String inputText) throws IOException {
 
-        Parser parser = new Parser();
-        String stringNews = parser.getPage(url);
-        ArrayList<SendMessage> listMessage = new ArrayList<>();
-        if (inputText.startsWith("/start")) {
+        ArrayList<SendMessage> listMessage =  new ArrayList<>();
+//        if (inputText.startsWith("/start")) {
+            Parser parser = new Parser();
+            String stringNews = parser.getPage(getAllUrlList(), inputText);
+            if (stringNews.isEmpty()) {
+                listMessage.add(new SendMessage(chatId, "По вашему запросу ничего не найдено"+"\n"
+                        +"Попробуйте по-другому сформулировать ключевую фразу/слово/часть слова "));
+               return listMessage;
+            }
+            listMessage = new ArrayList<>();
             int stepMaxChars = 4000;
             int startIndex = 0;
             while (startIndex + stepMaxChars < stringNews.length()) {
@@ -114,9 +119,9 @@ public class VpoBot extends TelegramLongPollingBot {
             //The last part of News
             listMessage.add(new SendMessage(chatId, stringNews.substring(startIndex)));
 
-        } else {
-            listMessage.add(new SendMessage(chatId, START_ACTION));
-        }
+//        } else {
+//            listMessage.add(new SendMessage(chatId, START_ACTION));
+//        }
         return listMessage;
     }
 
@@ -125,6 +130,12 @@ public class VpoBot extends TelegramLongPollingBot {
         try {
             listNewsUrl.add(new URL("https://www.aa.com.tr/ru/rss/default?cat=live"));
             listNewsUrl.add(new URL("https://sana.sy/ru/?feed=rss2"));
+            listNewsUrl.add(new URL("https://regnum.ru/rss/news.html"));
+            listNewsUrl.add(new URL("https://ria.ru/export/rss2/archive/index.xml"));
+            listNewsUrl.add(new URL("https://russian.rt.com/rss"));
+            listNewsUrl.add(new URL("https://tass.ru/rss/v2.xml"));
+            listNewsUrl.add(new URL("http://vsenato.ru/feed/"));
+//            listNewsUrl.add(new URL("https://iz.ru/xml/rss/all.xml"));
         } catch (MalformedURLException e) {
             e.printStackTrace();
         }
