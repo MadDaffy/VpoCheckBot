@@ -14,7 +14,7 @@ public class VpoBotApp {
 //        ApiContextInitializer.init();
         log.info("{} api context has been initialized", LOG_TAG);
 
-        VpoBot VPO_check_bot = new VpoBot("VPO_check_bot", "1628820312:AAHq7FfWeoxp2hw8KUegsXziXg5B7YOG6gc");
+        VpoBot VPO_check_bot = new VpoBot("VPO_check_bot", "ключ");
 
         VPO_check_bot.botConnect();
     }
